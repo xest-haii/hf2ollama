@@ -1,14 +1,1 @@
-TEMPLATE """{{ if .System }}[|system|]system
-{{ .System }}[|endofturn|]
-{{ end }}{{ if .Prompt }}[|user|]user
-{{ .Prompt }}[|endofturn|]
-{{ end }}[|assistant|]assistant
-"""
-
-SYSTEM """You are EXAONE model from LG AI Research, a helpful assistant."""
-
-PARAMETER num_ctx 4096
-PARAMETER stop [|system|]
-PARAMETER stop [|user|]
-PARAMETER stop [|assistant|]
-PARAMETER stop [|endofturn|]
+Modelfile.exaone-3

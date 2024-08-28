@@ -99,6 +99,9 @@ def is_llama_model(exaone_model_path):
     if 'LlamaForCausalLM' in j['architectures']:
         print(f"{exaone_model_path} is already Llama model")
         return True
+    elif 'Gemma2ForCausalLM' in j['architectures']:
+        print(f"{exaone_model_path} is already Gemma model")
+        return True
     return False
 
 if __name__ == "__main__":
