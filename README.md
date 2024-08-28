@@ -33,7 +33,7 @@ Targets
 * make clean           : Delete the docker images for building
 * make distclean       : Delete the docker images for building and all the files generated
 
-Supported Models
+Tested Models
 ----------------
 * https://huggingface.co/LGAI-EXAONE/EXAONE-3.0-7.8B-Instruct
 * https://huggingface.co/MLP-KTLim/llama-3-Korean-Bllossom-8B
