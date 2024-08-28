@@ -18,7 +18,7 @@ Environment Variables
 ---------------------
 * HF_MODEL_ID          : Hugging Face Model ID (default: LGAI-EXAONE/EXAONE-3.0-7.8B-Instruct)
 * QUANTIZE_METHOD      : Quantize method (default: Q4_K_M)
-* OLLAMA_MODEL         : Ollama model name (default: exaone3)
+* OLLAMA_MODEL         : Ollama model name (default: LGAI-EXAONE_EXAONE-3.0-7.8B-Instruct)
 * OLLAMA_HOST          : Ollama host url (default: http://localhost:11434)
 
 Targets
