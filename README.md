@@ -1,12 +1,17 @@
 # hf2ollama
-
 ```mermaid
-graph TD;
-  A[Hugging Face] --[download]--> B[safe tensors];
-  B --[llamafy]--> C[llamafied];
-  C --[convert_hf_to_gguf]--> D[gguf];
-  D --[llama-quantize]--> E[quantized];
-  E --[ollama create]--> F[ollama];
+graph LR
+  subgraph HF to Quantized GGUF
+    A[(Hugging Face)]-->B[safetensors]-->C[llamafied]-->D[gguf]-->E[quantized]
+  end
+  subgraph Ollama
+    E-. ollama create .->I[(Ollama)]
+  end
+  subgraph UI
+    J[CLI]<-. ollama run .->I
+    K[open-webui]<-. api .->I
+    L[LibreChat]<-. api .->I
+  end
 ```
 
 Environment Variables
@@ -28,3 +33,15 @@ Targets
 * make clean           : Delete the docker images for building
 * make distclean       : Delete the docker images for building and all the files generated
 
+Supported Models
+----------------
+* https://huggingface.co/LGAI-EXAONE/EXAONE-3.0-7.8B-Instruct
+* https://huggingface.co/MLP-KTLim/llama-3-Korean-Bllossom-8B
+
+References
+----------
+* https://huggingface.co/maywell/EXAONE-3.0-7.8B-Instruct-Llamafied
+* https://github.com/ggerganov/llama.cpp
+* https://github.com/ollama/ollama
+* https://github.com/open-webui/open-webui
+* https://github.com/danny-avila/LibreChat
