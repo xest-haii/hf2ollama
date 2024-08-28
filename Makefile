@@ -20,7 +20,7 @@ MODEL_CONVERTED := /models/$(HF_MODEL_ID)-Llamafied.gguf
 MODEL_QUANTIZED := /models/$(HF_MODEL_ID)-LLamafied-$(QUANTIZE_METHOD).gguf
 
 OLLAMA_IMAGE := ollama/ollama
-OLLAMA_MODEL_DEFAULT := exaone3
+OLLAMA_MODEL_DEFAULT := $(HF_MODEL_NAME)
 OLLAMA_MODEL ?= $(OLLAMA_MODEL_DEFAULT)
 OLLAMA_MODEL_FILE_TEMPLATE := Modelfile.$(HF_MODEL_NAME)
 OLLAMA_MODEL_FILE := $(MODEL_QUANTIZED).modelfile
@@ -49,7 +49,7 @@ define DOCKER_RUN
 docker run \
 	--rm \
 	--gpus all \
-	-v $(HOME)/$(HF_CACHE):/root/$(HF_CACHE) \
+	-v $(HOME)/$(HF_CACHE):/home/app/$(HF_CACHE) \
 	-v ./models:/models \
 	-e UID=$(UID) \
 	-e GID=$(GID) \
