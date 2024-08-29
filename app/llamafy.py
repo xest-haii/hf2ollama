@@ -93,21 +93,21 @@ def port_exaone_to_llama(exaone_model_path, llama_model_path):
 
     print(f"EXAONE model successfully ported to Llama format and saved at {llama_model_path}")
 
-def is_llama_model(exaone_model_path):
+def need_llamafy(exaone_model_path):
     with open(os.path.join(exaone_model_path, 'config.json')) as rf:
         j = json.load(rf)
-    if 'LlamaForCausalLM' in j['architectures']:
-        print(f"{exaone_model_path} is already Llama model")
-        return True
-    elif 'Gemma2ForCausalLM' in j['architectures']:
-        print(f"{exaone_model_path} is already Gemma model")
-        return True
-    return False
+    # https://github.com/ollama/ollama/blob/6c1c1ad6a90e8fe23d63d2c431745e48e3fe9d81/convert/convert.go#L178
+    arch = j.get("architectures", [""]).pop(0)
+    arch_short = arch.replace("ForCausalLM", "")
+    if arch_short in ["Llama", "Mistral", "Mixtral", "Gemma", "Gemma2", "Phi3", "BertModel"]:
+        print("Architecture is", arch)
+        return False
+    return True
 
 if __name__ == "__main__":
-    if is_llama_model(sys.argv[1]):
+    if need_llamafy(sys.argv[1]):
+        port_exaone_to_llama(sys.argv[1], sys.argv[2])
+    else:
         if os.path.exists(sys.argv[2]):
             os.remove(sys.argv[2])
         os.symlink(os.path.basename(sys.argv[1]), sys.argv[2])
-    else:
-        port_exaone_to_llama(sys.argv[1], sys.argv[2])
