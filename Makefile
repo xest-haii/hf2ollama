@@ -28,6 +28,7 @@ OLLAMA_MODEL_FILE_TEMPLATE := Modelfile.$(HF_MODEL_NAME)
 OLLAMA_MODEL_FILE := $(MODEL_QUANTIZED).modelfile
 OLLAMA_HOST_DEFAULT := http://localhost:11434
 OLLAMA_HOST ?= $(OLLAMA_HOST_DEFAULT)
+OLLAMA_MODELS := nomic-embed-text hermes3 llama3.1 glm4 gemma2 qwen2
 
 define HELP_HEADING
 (echo; echo $(1); printf "%$$(echo -n $(1) | wc -c)s\n" | sed "s/ /-/g")
@@ -71,10 +72,15 @@ define DOCKER_OLLAMA_RUN
 docker run \
 	--name $(DOCKER_IMAGE)-ollama \
 	--rm \
+	--add-host=host.docker.internal:host-gateway \
 	-v ./models:/models \
 	$(1) \
 	$(OLLAMA_IMAGE) \
 	$(2)
+endef
+
+define DOCKER_OLLAMA_RUN_REMOTE
+$(call DOCKER_OLLAMA_RUN,-e OLLAMA_HOST=$(OLLAMA_HOST) $(1),$(2))
 endef
 
 ifeq ($(V),)
@@ -82,7 +88,7 @@ ifeq ($(V),)
 endif
 
 .PHONY: all help build download llamafy convert quantize create run \
-	readme shell ollama-shell clean distclean
+	readme shell ollama-shell ollama-pull clean distclean
 
 all: help
 
@@ -104,6 +110,7 @@ help:
 	$(call HELP,"make readme","Update README.md")
 	$(call HELP,"make shell","Run a shell of the docker image for build")
 	$(call HELP,"make ollama-shell","Run a shell of the Ollama docker image")
+	$(call HELP,"make ollama-pull","Pull Ollama models")
 	$(call HELP,"make clean","Delete the docker images for building")
 	$(call HELP,"make distclean","Delete the docker images for building and all the files generated")
 
@@ -136,10 +143,10 @@ modelfile: build
 	$(call DOCKER_RUN,,./main.sh modelfile)
 
 create: quantize modelfile
-	$(call DOCKER_OLLAMA_RUN,-e OLLAMA_HOST=$(OLLAMA_HOST),create $(OLLAMA_MODEL) -f $(OLLAMA_MODEL_FILE))
+	$(call DOCKER_OLLAMA_RUN_REMOTE,,create $(OLLAMA_MODEL) -f $(OLLAMA_MODEL_FILE))
 
 run:
-	$(call DOCKER_OLLAMA_RUN,-e OLLAMA_HOST=$(OLLAMA_HOST) -it,run $(OLLAMA_MODEL))
+	$(call DOCKER_OLLAMA_RUN_REMOTE,-it,run $(OLLAMA_MODEL))
 
 readme: $(DIR_ROOT)/README.md
 $(DIR_ROOT)/README.md: $(DIR_ROOT)/Makefile $(wildcard $(DIR_README)/*)
@@ -158,13 +165,17 @@ shell: build
 	$(call DOCKER_RUN,-it)
 
 ollama-shell:
-	$(call DOCKER_OLLAMA_RUN,-d)
+	$(call DOCKER_OLLAMA_RUN,-d) >/dev/null
 	docker exec -it $(DOCKER_IMAGE)-ollama \
 		/bin/sh -c "export OLLAMA_HOST=$(OLLAMA_HOST) && exec /usr/bin/bash"
-	docker stop $(DOCKER_IMAGE)-ollama
+	docker stop $(DOCKER_IMAGE)-ollama >/dev/null
+
+ollama-pull:
+	$(foreach model,$(OLLAMA_MODELS),echo "* $(model)" && $(call DOCKER_OLLAMA_RUN_REMOTE,,pull $(model));)
 
 clean:
-	docker rmi $(DOCKER_IMAGE) $(OLLAMA_IMAGE)
+	-rm -f $(DIR_STAMPS)/*
+	-docker rmi $(DOCKER_IMAGE) $(OLLAMA_IMAGE)
 
 distclean: clean
 	rm -rf $(DIR_MODELS)/*

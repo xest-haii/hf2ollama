@@ -40,6 +40,7 @@ Development Targets
 * make readme          : Update README.md
 * make shell           : Run a shell of the docker image for build
 * make ollama-shell    : Run a shell of the Ollama docker image
+* make ollama-pull     : Pull Ollama models
 * make clean           : Delete the docker images for building
 * make distclean       : Delete the docker images for building and all the files generated
 
