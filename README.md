@@ -34,6 +34,12 @@ Targets
 * make quantize        : Quantize the gguf model
 * make create          : Create a model that can be used in Ollama
 * make run             : Run Ollama CLI
+
+Development Targets
+-------------------
+* make readme          : Update README.md
+* make shell           : Run a shell of the docker image for build
+* make ollama-shell    : Run a shell of the Ollama docker image
 * make clean           : Delete the docker images for building
 * make distclean       : Delete the docker images for building and all the files generated
 

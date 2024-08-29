@@ -2,8 +2,10 @@ DIR_ROOT := $(CURDIR)
 DIR_APP := $(DIR_ROOT)/app
 DIR_MODELS := $(DIR_ROOT)/models
 DIR_STAMPS := $(DIR_ROOT)/stamps
+DIR_README := $(DIR_ROOT)/readme.d
 
-DOCKER_IMAGE := $(notdir $(DIR_ROOT))-$(USER)
+PRJ := $(notdir $(DIR_ROOT))
+DOCKER_IMAGE := $(PRJ)-$(USER)
 UID := $(shell id -u)
 GID := $(shell id -g)
 
@@ -28,9 +30,7 @@ OLLAMA_HOST_DEFAULT := http://localhost:11434
 OLLAMA_HOST ?= $(OLLAMA_HOST_DEFAULT)
 
 define HELP_HEADING
-echo
-echo "$(1)"
-printf "%$$(echo -n $(1) | wc -c)s\n" | sed "s/ /-/g"
+(echo; echo $(1); printf "%$$(echo -n $(1) | wc -c)s\n" | sed "s/ /-/g")
 endef
 
 define HELP
@@ -47,6 +47,7 @@ endef
 
 define DOCKER_RUN
 docker run \
+	--name $(DOCKER_IMAGE) \
 	--rm \
 	--gpus all \
 	-v $(HOME)/$(HF_CACHE):/home/app/$(HF_CACHE) \
@@ -61,18 +62,19 @@ docker run \
 	-e MODEL_QUANTIZED=$(MODEL_QUANTIZED) \
 	-e OLLAMA_MODEL_FILE_TEMPLATE=$(OLLAMA_MODEL_FILE_TEMPLATE) \
 	-e OLLAMA_MODEL_FILE=$(OLLAMA_MODEL_FILE) \
+	$(1) \
 	$(DOCKER_IMAGE) \
-	./main.sh $(1)
+	$(2)
 endef
 
 define DOCKER_OLLAMA_RUN
 docker run \
+	--name $(DOCKER_IMAGE)-ollama \
 	--rm \
-	-it \
 	-v ./models:/models \
-	-e OLLAMA_HOST=$(OLLAMA_HOST) \
+	$(1) \
 	$(OLLAMA_IMAGE) \
-	$(1)
+	$(2)
 endef
 
 ifeq ($(V),)
@@ -80,8 +82,7 @@ ifeq ($(V),)
 endif
 
 .PHONY: all help build download llamafy convert quantize create run \
-	force-build force-download force-llamafy force-convert force-quantize \
-	clean distclean
+	readme shell ollama-shell clean distclean
 
 all: help
 
@@ -99,43 +100,68 @@ help:
 	$(call HELP,"make quantize","Quantize the gguf model")
 	$(call HELP,"make create","Create a model that can be used in Ollama")
 	$(call HELP,"make run","Run Ollama CLI")
+	$(call HELP_HEADING,"Development Targets")
+	$(call HELP,"make readme","Update README.md")
+	$(call HELP,"make shell","Run a shell of the docker image for build")
+	$(call HELP,"make ollama-shell","Run a shell of the Ollama docker image")
 	$(call HELP,"make clean","Delete the docker images for building")
 	$(call HELP,"make distclean","Delete the docker images for building and all the files generated")
-	echo
 
 build: $(DIR_STAMPS)/built
-$(DIR_STAMPS)/built: Dockerfile $(DIR_APP)/*
+$(DIR_STAMPS)/built: $(DIR_ROOT)/Dockerfile $(wildcard $(DIR_APP)/*)
 	$(call DOCKER_BUILD)
 	touch $@
 
 download: build $(DIR_STAMPS)/downloaded.$(HF_MODEL_NAME)
 $(DIR_STAMPS)/downloaded.$(HF_MODEL_NAME):
-	$(call DOCKER_RUN,download)
+	$(call DOCKER_RUN,,./main.sh download)
 	touch $@
 
 llamafy: download $(DIR_STAMPS)/llamafied.$(HF_MODEL_NAME)
 $(DIR_STAMPS)/llamafied.$(HF_MODEL_NAME):
-	$(call DOCKER_RUN,llamafy)
+	$(call DOCKER_RUN,,./main.sh llamafy)
 	touch $@
 
 convert: llamafy $(DIR_STAMPS)/converted.$(HF_MODEL_NAME)
 $(DIR_STAMPS)/converted.$(HF_MODEL_NAME):
-	$(call DOCKER_RUN,convert)
+	$(call DOCKER_RUN,,./main.sh convert)
 	touch $@
 
 quantize: convert $(DIR_STAMPS)/quantized.$(HF_MODEL_NAME)
 $(DIR_STAMPS)/quantized.$(HF_MODEL_NAME):
-	$(call DOCKER_RUN,quantize)
+	$(call DOCKER_RUN,,./main.sh quantize)
 	touch $@
 
 modelfile: build
-	$(call DOCKER_RUN,modelfile)
+	$(call DOCKER_RUN,,./main.sh modelfile)
 
 create: quantize modelfile
-	$(call DOCKER_OLLAMA_RUN,create $(OLLAMA_MODEL) -f $(OLLAMA_MODEL_FILE))
+	$(call DOCKER_OLLAMA_RUN,-e OLLAMA_HOST=$(OLLAMA_HOST),create $(OLLAMA_MODEL) -f $(OLLAMA_MODEL_FILE))
 
 run:
-	$(call DOCKER_OLLAMA_RUN,run $(OLLAMA_MODEL))
+	$(call DOCKER_OLLAMA_RUN,-e OLLAMA_HOST=$(OLLAMA_HOST) -it,run $(OLLAMA_MODEL))
+
+readme: $(DIR_ROOT)/README.md
+$(DIR_ROOT)/README.md: $(DIR_ROOT)/Makefile $(wildcard $(DIR_README)/*)
+	echo "# $(PRJ)" >$@
+	cat $(DIR_README)/summary.md >>$@
+	$(call HELP_HEADING,"Flowchart") >>$@
+	cat $(DIR_README)/flowchart.md >>$@
+	$(MAKE) -s help >>$@ 2>/dev/null
+	$(call HELP_HEADING,"Tested Models") >>$@
+	cat $(DIR_README)/models.md >>$@
+	$(call HELP_HEADING,"References") >>$@
+	cat $(DIR_README)/references.md >>$@
+	git diff $@
+
+shell: build
+	$(call DOCKER_RUN,-it)
+
+ollama-shell:
+	$(call DOCKER_OLLAMA_RUN,-d)
+	docker exec -it $(DOCKER_IMAGE)-ollama \
+		/bin/sh -c "export OLLAMA_HOST=$(OLLAMA_HOST) && exec /usr/bin/bash"
+	docker stop $(DOCKER_IMAGE)-ollama
 
 clean:
 	docker rmi $(DOCKER_IMAGE) $(OLLAMA_IMAGE)
