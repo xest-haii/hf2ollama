@@ -28,7 +28,7 @@ OLLAMA_MODEL_FILE_TEMPLATE := Modelfile.$(HF_MODEL_NAME)
 OLLAMA_MODEL_FILE := $(MODEL_QUANTIZED).modelfile
 OLLAMA_HOST_DEFAULT := http://host.docker.internal:11434
 OLLAMA_HOST ?= $(OLLAMA_HOST_DEFAULT)
-OLLAMA_MODELS := nomic-embed-text hermes3 llama3.1 glm4 gemma2 qwen2
+OLLAMA_MODELS ?= nomic-embed-text hermes3 llama3.1 mistral-nemo glm4 internlm2 gemma2 qwen2 deepseek-v2 aya
 
 define HELP_HEADING
 (echo; echo $(1); printf "%$$(echo -n $(1) | wc -c)s\n" | sed "s/ /-/g")
