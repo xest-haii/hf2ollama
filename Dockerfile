@@ -25,6 +25,10 @@ RUN git clone https://github.com/ggerganov/llama.cpp
 RUN pip install --user -r llama.cpp/requirements/requirements-convert_hf_to_gguf.txt
 RUN make -C llama.cpp llama-quantize
 
+# for server
+RUN make -C llama.cpp llama-server
+RUN pip install --user fastapi openai pydantic uvicorn
+
 COPY ./app /home/app
 ENV PATH="/home/app/.local/bin:$PATH"
 CMD ["/usr/bin/bash"]
