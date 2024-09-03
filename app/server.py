@@ -63,7 +63,7 @@ class ModelServer:
     while True:
       await asyncio.sleep(60)
       now = time.time()
-      for model_server in cls.servers:
+      for model_server in cls.servers.values():
         if model_server.process and now - model_server.last_used > cls.SERVER_LIFETIME:
           await model_server.stop()
 
