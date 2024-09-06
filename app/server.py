@@ -54,7 +54,7 @@ class ModelServer:
       if os.path.isdir(dir_path):
         for file_name in sorted(os.listdir(dir_path)):
           if file_name.endswith(cls.MODEL_SUFFIX):
-            model_name = '_'.join([owner, file_name]).replace(cls.MODEL_SUFFIX, '')
+            model_name = f'{owner}/{file_name.replace(cls.MODEL_SUFFIX, "")}'
             model_path = os.path.join(cls.DIR_MODELS, owner, file_name)
             cls.servers[model_name] = cls(model_name, model_path, port)
             port += 1
