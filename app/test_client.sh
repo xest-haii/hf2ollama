@@ -18,7 +18,7 @@ curl -v ${OPENAI_BASE_URL}/chat/completions \
 			},
 			{
 				\"role\": \"user\",
-				\"content\": \"${USER_NESSAGE}\"
+				\"content\": \"${USER_MESSAGE}\"
 			}
 		],
 		\"stream\": ${STREAM}

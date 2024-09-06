@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import time
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
 import uvicorn
@@ -26,7 +27,7 @@ class ModelServer:
   DIR_MODELS = os.getenv('DIR_MODELS', '/models')
   MODEL_SUFFIX = os.getenv('MODEL_SUFFIX', '-Llamafied-Q4_K_M.gguf')
   SERVER_PORT = int(os.getenv('SERVER_PORT', 8000))
-  SERVER_CMD = os.getenv('SERVER_CMD', 'llama.cpp/llama-server')
+  SERVER_CMD = os.getenv('SERVER_CMD', '/usr/bin/python3 -m llama_cpp.server')
   SERVER_LIFETIME = int(os.getenv('SERVER_LIFETIME', 3600))
 
   servers = {}
@@ -70,8 +71,15 @@ class ModelServer:
   async def start(self):
     self.last_used = time.time()
     if self.process is None:
-      command = [self.SERVER_CMD, '--model', self.model_path, '--port', str(self.port)]
+      command = [
+        *self.SERVER_CMD.split(' '),
+        '--model', self.model_path,
+        '--host', '0.0.0.0',
+        '--port', str(self.port),
+        '--n_gpu_layers', '-1',
+      ]
       self.process = await asyncio.create_subprocess_exec(*command)
+      await asyncio.sleep(2)
 
   async def stop(self):
     self.last_used = 0
@@ -87,8 +95,16 @@ class ModelServer:
       stream=request.stream,
     )
 
+  @classmethod
+  @asynccontextmanager
+  async def lifespan(cls, app):
+    await cls.servers_init()
+    yield
+    for model_server in cls.servers:
+      await model_server.stop()
 
-app = FastAPI()
+
+app = FastAPI(lifespan=ModelServer.lifespan)
 
 @app.get('/v1/models')
 async def models():
@@ -119,18 +135,16 @@ async def chat_completions(request: ChatCompletionRequest):
     async def stream_response():
       async for chunk in response:
         data = chunk.to_dict()
-        if not data['choices'][0]['delta']:
-          data['choices'][0]['delta']['content'] = ''
-        yield 'data: {}\n\n'.format(json.dumps(data))
-      yield 'data: [DONE]\n\n'
+        choice = data.get('choices', [{}])[0]
+        delta = choice.get('delta', {})
+        if delta.get('content'):
+          yield 'data: {}\n\n'.format(json.dumps(data))
+        if choice.get('finish_reason'):
+          yield 'data: [DONE]\n\n'
 
     return StreamingResponse(stream_response(), media_type='text/event-stream')
 
   return Response(content=response.json(), media_type='application/json')
-
-@app.on_event('startup')
-async def startup_event():
-  await ModelServer.servers_init()
 
 
 if __name__ == '__main__':
