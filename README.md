@@ -34,6 +34,7 @@ Targets
 * make quantize        : Quantize the gguf model
 * make create          : Create a model that can be used in Ollama
 * make run             : Run Ollama CLI
+* make server          : Build a docker image for server
 
 Development Targets
 -------------------

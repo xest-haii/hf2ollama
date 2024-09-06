@@ -5,10 +5,10 @@ import time
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
+import openai
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response, StreamingResponse
-from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 
@@ -40,9 +40,10 @@ class ModelServer:
     self.process = None
     self.last_used = 0
 
-    self.agent = AsyncOpenAI(
+    self.agent = openai.AsyncOpenAI(
       base_url=f'http://localhost:{port}/v1',
       api_key='openai',
+      max_retries=1,
     )
 
   @classmethod
@@ -79,7 +80,13 @@ class ModelServer:
         '--n_gpu_layers', '-1',
       ]
       self.process = await asyncio.create_subprocess_exec(*command)
-      await asyncio.sleep(2)
+
+      for _ in range(100):
+        try:
+          await self.agent.models.list(timeout=0.1)
+          break
+        except openai.APIConnectionError as ex:
+          pass
 
   async def stop(self):
     self.last_used = 0
