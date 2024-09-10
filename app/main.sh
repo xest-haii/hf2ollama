@@ -5,11 +5,11 @@ download() {
 }
 
 llamafy() {
-	python llamafy.py ${MODEL_OFFICIAL} ${MODEL_LLAMAFIED}
+	python3 llamafy.py ${MODEL_OFFICIAL} ${MODEL_LLAMAFIED}
 }
 
 convert() {
-	python llama.cpp/convert_hf_to_gguf.py \
+	python3 llama.cpp/convert_hf_to_gguf.py \
 		${MODEL_LLAMAFIED} \
 		--outfile ${MODEL_CONVERTED} \
 		--outtype auto
