@@ -43,7 +43,7 @@ printf "* %-20s : %s\n" $(1) $(2)
 endef
 
 define DOCKER_BUILD
-docker build --target $(1)\
+DOCKER_BUILDKIT=1 docker build --target $(1)\
 	-t $(DOCKER_IMAGE):$(1) \
 	--build-arg UID=$(UID) \
 	--build-arg GID=$(GID) \
