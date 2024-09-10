@@ -187,7 +187,8 @@ ollama-pull:
 
 clean:
 	-rm -f $(DIR_STAMPS)/*
-	-docker rmi $(DOCKER_IMAGE) $(OLLAMA_IMAGE)
+	-rm -rf $(DIR_MODELS)/*/*-Llamafied*
+	-docker rmi $(DOCKER_IMAGE):build $(DOCKER_IMAGE):server $(OLLAMA_IMAGE)
 
 distclean: clean
 	rm -rf $(DIR_MODELS)/*
